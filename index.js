@@ -1,5 +1,8 @@
 const express = require('express');
-const app = express();
+const app = express(); //express para que inicie el servidor
+const jwt = require('jsonwebtoken') //importacion de la libreria jwt
+require('dotenv').config();  //configuracion de .env
+
 
 //middleware necesarios!!
 app.use(express.urlencoded({extended : false}));
@@ -13,8 +16,9 @@ app.get('/' , (req, res) =>{
 });
 
 //ruta de la api
-app.get('/api', (req, res)=>{
+app.get('/api', validateToken, (req, res)=>{    //!  Aqui le coloco el middleware (validateToken) para darle seguridad a la api
     res.json({
+        username : req.user,
         tuits: [
             {
                 id : 0,
@@ -58,13 +62,35 @@ app.post('/auth', (req, res)=>{
     //?Generamos un token general de acceso
 
     const accessToken = generateAccessToken(user);
+
+    res.header('autorization', accessToken).json({
+        message : 'Usuario autenticado',
+        token : accessToken
+    })  //resp al usuario, nuestro token + json para personalizarlo mas.
 })
 
-//! Creamos la funcion para generarlo
 
+//! Creamos la funcion para generarlo
+//esta funcion nos permite dar la firma (sing)
 function generateAccessToken(user){
-    
+    return jwt.sign(user, process.env.SECRET, {expiresIn : '5m'}) //aqui va la palabra secreta que la tengo en el .env, luego viene la expiracion.
 }
+
+//!  Middleware  -  funcion para validar el token
+function validateToken (req, res, next){        
+    const accessToken = req.headers['autorization'] || req.query.accessToken;
+    if (!accessToken) res.send('Access denied') //sino hay token no hay acceso
+
+    jwt.verify(accessToken, process.env.SECRET, (err, user) =>{         //usamos .verify para verificar si el token es el correcto
+        if(err){
+            res.send('Access denied Token incorrect or expire ')
+        }else {
+            res.user = user;
+            next()          //si funciona el token llama a la sig funcion, next.
+        }
+    });
+}
+
 
 // Servidor onLine ---
 app.listen(3001, ()=>{
