@@ -59,7 +59,7 @@ app.post('/auth', (req, res)=>{
     //aqui deberiamos consultar en la db y validar si existe usuario y password
     const user = {username : username};
 
-    //?Generamos un token general de acceso
+    //!Generamos un token general de acceso
 
     const accessToken = generateAccessToken(user);
 
